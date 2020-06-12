@@ -18,14 +18,14 @@
     <logger name="liveproject.m2k8s.web" level="DEBUG">
         <appender-ref ref="SQLLOG"/>
     </logger>
-    <logger name="org.hibernate.type" level="ALL">
+    <logger name="org.hibernate.type" level="INFO">
         <appender-ref ref="SQLLOG"/>
     </logger>
-    <logger name="org.hibernate" level="DEBUG">
+    <logger name="org.hibernate" level="INFO">
         <appender-ref ref="SQLLOG"/>
     </logger>
 
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

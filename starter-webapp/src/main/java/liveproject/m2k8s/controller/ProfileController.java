@@ -1,26 +1,22 @@
-package liveproject.m2k8s.web;
+package liveproject.m2k8s.controller;
 
-import liveproject.m2k8s.Profile;
+import liveproject.m2k8s.domain.Profile;
 import liveproject.m2k8s.data.ProfileRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,12 +25,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
-
-@Controller
 @Slf4j
+@RestController
 @RequestMapping("/profile")
+@Validated
 public class ProfileController {
 
     private ProfileRepository profileRepository;
@@ -50,37 +44,56 @@ public class ProfileController {
         this.profileRepository = profileRepository;
     }
 
-    @RequestMapping(value = "/register", method = GET)
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException e) {
+        return new ResponseEntity<>("not valid due to validation error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+/*
+| HTTP Method | URL                       | Behavior                            |
+| ----------- | ------------------------- | ----------------------------------- |
+| GET         | /profile/{username}       | get profile info for {username}     |
+| POST        | /profile/{username}       | create profile info for {username}  |
+| PUT         | /profile/{username}       | update profile info for {username}  |
+| GET         | /profile/{username}/image | get profile image for {username}    |
+| POST        | /profile/{username}/image | upload profile image for {username} |
+
+ */
+  /*  @RequestMapping(value = "/register", method = GET)
     public String showRegistrationForm(Model model) {
         model.addAttribute(new Profile());
         return "registerForm";
+    }*/
+
+    @PostMapping()
+    @Transactional
+    public ResponseEntity<Profile> createProfile(@Valid @RequestBody Profile profile) {
+        log.info("Post Request: Create Profile {}", profile);
+        Profile profileSaved = profileRepository.save(profile);
+
+        return new ResponseEntity<>(profileSaved, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/register", method = POST)
-    @Transactional
-    public String processRegistration(
-            @Valid Profile profile,
-            Errors errors) {
-        if (errors.hasErrors()) {
-            return "registerForm";
+
+    //@RequestMapping(value = "/{username}", method = GET)
+    @GetMapping("/{username}")
+    public ResponseEntity<Profile> showProfile(@PathVariable String username) {
+        log.info("Get Request - Profile for: "+username);
+        Profile profile = profileRepository.findByUsername(username);
+        if (profile == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<>(profile,HttpStatus.OK);
         }
 
-        profileRepository.save(profile);
-        return "redirect:/profile/" + profile.getUsername();
     }
 
-    @RequestMapping(value = "/{username}", method = GET)
-    public String showProfile(@PathVariable String username, Model model) {
-        log.debug("Reading model for: "+username);
-        Profile profile = profileRepository.findByUsername(username);
-        model.addAttribute(profile);
-        return "profile";
-    }
-
-    @RequestMapping(value = "/{username}", method = POST)
+//    @RequestMapping(value = "/{username}", method = POST)
     @Transactional
-    public String updateProfile(@PathVariable String username, @ModelAttribute Profile profile, Model model) {
-        log.debug("Updating model for: "+username);
+    @PutMapping("/{username}")
+    public ResponseEntity<Profile> updateProfile(@PathVariable String username, @Valid @RequestBody Profile profile) {
+        log.info("Updating model for: "+username);
         Profile dbProfile = profileRepository.findByUsername(username);
         boolean dirty = false;
         if (!StringUtils.isEmpty(profile.getEmail())
@@ -101,14 +114,15 @@ public class ProfileController {
         if (dirty) {
             profileRepository.save(dbProfile);
         }
-        model.addAttribute(profile);
-        return "profile";
+        return new ResponseEntity<>(profile,HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{username}/image.jpg", method = GET, produces = MediaType.IMAGE_JPEG_VALUE)
+     /* @RequestMapping(value = "/{username}/image.jpg", method = GET, produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
-    public byte[] displayImage(@PathVariable String username) throws IOException {
-        log.debug("Reading image for: "+username);
+   */
+    @GetMapping(value = "/{username}/image",produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> displayImage(@PathVariable String username) throws IOException {
+        log.info("Reading image for: "+username);
         InputStream in = null;
         try {
             Profile profile = profileRepository.findByUsername(username);
@@ -117,7 +131,7 @@ public class ProfileController {
             } else {
                 in = new FileInputStream(profile.getImageFileName());
             }
-            return IOUtils.toByteArray(in);
+            return new ResponseEntity<>(IOUtils.toByteArray(in),HttpStatus.OK);
         } finally {
             if (in != null) {
                 in.close();
@@ -125,19 +139,22 @@ public class ProfileController {
         }
     }
 
-    @RequestMapping(value = "/upload/{username}", method = POST)
+    @PostMapping(value = "/{username}/image")
     @Transactional
-    public String uploadImage(@PathVariable String username, @RequestParam("file") MultipartFile file,
-                              RedirectAttributes redirectAttributes) {
-        log.debug("Updating image for: "+username);
+    public ResponseEntity uploadImage(@PathVariable String username, @RequestParam("file") MultipartFile file){
+        log.info("Updating image for: "+username);
         if (file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("imageMessage", "Empty file - please select a file to upload");
-            return "redirect:/profile/" + username;
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            /*redirectAttributes.addFlashAttribute("imageMessage", "Empty file - please select a file to upload");
+            return "redirect:/profile/" + username;*/
         }
         String fileName = file.getOriginalFilename();
         if (!(fileName.endsWith("jpg") || fileName.endsWith("JPG"))) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+/*
             redirectAttributes.addFlashAttribute("imageMessage", "JPG files only - please select a file to upload");
             return "redirect:/profile/" + username;
+*/
         }
         try {
             final String contentType = file.getContentType();
@@ -149,12 +166,13 @@ public class ProfileController {
             profile.setImageFileName(path.toString());
             profile.setImageFileContentType(contentType);
             profileRepository.save(profile);
-            redirectAttributes.addFlashAttribute("imageMessage",
-                    "You successfully uploaded '" + fileName + "'");
+            /*redirectAttributes.addFlashAttribute("imageMessage",
+                    "You successfully uploaded '" + fileName + "'");*/
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "redirect:/profile/" + username;
+        //return "redirect:/profile/" + username;
+        return new ResponseEntity(HttpStatus.OK);
     }
 
 }

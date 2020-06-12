@@ -1,0 +1,71 @@
+tsweets@Moonlight resources % http POST localhost:8080/profile username=unamerkel password=changeme firstName=Una lastName=Merkel email=unamerkel@example.com
+HTTP/1.1 200
+Connection: keep-alive
+Content-Type: application/json
+Date: Fri, 12 Jun 2020 21:36:46 GMT
+Keep-Alive: timeout=60
+Transfer-Encoding: chunked
+
+{
+    "email": "unamerkel@example.com",
+    "firstName": "Una",
+    "id": 1,
+    "imageFileContentType": null,
+    "imageFileName": null,
+    "lastName": "Merkel",
+    "password": "changeme",
+    "username": "unamerkel"
+}
+
+tsweets@Moonlight resources % http localhost:8080/profile/unamerkel
+HTTP/1.1 200
+Connection: keep-alive
+Content-Type: application/json
+Date: Fri, 12 Jun 2020 21:38:28 GMT
+Keep-Alive: timeout=60
+Transfer-Encoding: chunked
+
+{
+    "email": "unamerkel@example.com",
+    "firstName": "Una",
+    "id": 1,
+    "imageFileContentType": "image/jpeg",
+    "imageFileName": "/tmp/unamerkel.jpg",
+    "lastName": "Merkel",
+    "password": "changeme",
+    "username": "unamerkel"
+}
+
+tsweets@Moonlight resources % http localhost:8080/profile/russcolombo
+HTTP/1.1 404
+Connection: keep-alive
+Content-Length: 0
+Date: Fri, 12 Jun 2020 21:38:49 GMT
+Keep-Alive: timeout=60
+
+
+
+tsweets@Moonlight resources % http -f POST http://localhost:8080/profile/unamerkel/image file@ghost.jpg
+HTTP/1.1 200
+Connection: keep-alive
+Content-Length: 0
+Date: Fri, 12 Jun 2020 21:36:48 GMT
+Keep-Alive: timeout=60
+
+
+
+tsweets@Moonlight resources % http localhost:8080/profile/unamerkel/image
+HTTP/1.1 200
+Connection: keep-alive
+Content-Length: 79243
+Content-Type: image/jpeg
+Date: Fri, 12 Jun 2020 21:37:11 GMT
+Keep-Alive: timeout=60
+
+
+
++-----------------------------------------+
+| NOTE: binary data not shown in terminal |
++-----------------------------------------+
+
+tsweets@Moonlight resources %
