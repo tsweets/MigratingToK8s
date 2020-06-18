@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 
-@Configuration
+//@Configuration
 public class DataConfig {
   @Value("${dataSource.driverClassName}")
   private String driver;

@@ -33,7 +33,7 @@ public class ProfileController {
 
     private ProfileRepository profileRepository;
 
-    @Value("${images.directory:/tmp}")
+    @Value("${images.directory:/data}")
     private String uploadFolder;
 
     @Value("classpath:ghost.jpg")

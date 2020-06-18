@@ -21,11 +21,11 @@
     <logger name="org.hibernate.type" level="INFO">
         <appender-ref ref="SQLLOG"/>
     </logger>
-    <logger name="org.hibernate" level="INFO">
+    <logger name="org.hibernate" level="DEBUG">
         <appender-ref ref="SQLLOG"/>
     </logger>
 
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

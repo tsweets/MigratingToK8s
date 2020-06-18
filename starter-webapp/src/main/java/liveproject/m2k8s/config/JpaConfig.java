@@ -17,9 +17,11 @@ import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import java.util.Properties;
 
+/*
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(basePackages = "liveproject")
+*/
 class JpaConfig {
 
     @Value("${hibernate.dialect}")

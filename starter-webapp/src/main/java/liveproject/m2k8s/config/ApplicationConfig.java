@@ -7,7 +7,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 @Configuration
-@PropertySource("classpath:persistence.properties")
+//@PropertySource("classpath:persistence.properties")
 class ApplicationConfig {
 
     @Bean
